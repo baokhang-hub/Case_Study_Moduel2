@@ -1,6 +1,7 @@
 package service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import entity.Contract;
@@ -23,6 +24,51 @@ public class ContractService implements IService<Contract> {
 
     public ContractService() {
         this.contracts = contractRepository.read();
+        processExpiredContracts();
+    }
+
+    public void processExpiredContracts() {
+        LocalDate today = LocalDate.now();
+        boolean changed = false;
+        for (Contract contract : contracts) {
+            if (contract.getStatus() == ContractStatus.ACTIVE && contract.getEndDate().isBefore(today)) {
+                contract.setStatus(ContractStatus.ENDED);
+                Room room = roomService.findById(contract.getRoomId());
+                room.setStatus(RoomStatus.AVAILABLE);
+                roomService.update(room.getId(), room);
+                changed = true;
+            }
+        }
+        if (changed) {
+            contractRepository.write(contracts);
+        }
+    }
+
+    public List<Contract> getContractsExpiringWithin(int days) {
+        if (days < 0) {
+            throw new IllegalArgumentException("So ngay can bao truoc khong duoc am.");
+        }
+        processExpiredContracts();
+        LocalDate today = LocalDate.now();
+        LocalDate limitDate = today.plusDays(days);
+        List<Contract> expiringContracts = new ArrayList<>();
+        for (Contract contract : contracts) {
+            if (contract.getStatus() == ContractStatus.ACTIVE
+                    && !contract.getEndDate().isBefore(today)
+                    && !contract.getEndDate().isAfter(limitDate)) {
+                expiringContracts.add(contract);
+            }
+        }
+        return expiringContracts;
+    }
+
+    public boolean hasActiveContractForTenant(long tenantId) {
+        for (Contract contract : getAll()) {
+            if (contract.getTenantId() == tenantId && contract.getStatus() == ContractStatus.ACTIVE) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void validateContract(Contract contract) {
@@ -45,6 +91,7 @@ public class ContractService implements IService<Contract> {
 
     @Override
     public void add(Contract contract) {
+        processExpiredContracts();
         validateContract(contract);
         if (contract.getStatus() != ContractStatus.ACTIVE) {
             throw new IllegalArgumentException("Hop dong moi phai co trang thai ACTIVE.");
@@ -52,6 +99,9 @@ public class ContractService implements IService<Contract> {
 
         Room room = roomService.findById(contract.getRoomId());
         tenantService.findById(contract.getTenantId());
+        if (hasActiveContractForTenant(contract.getTenantId())) {
+            throw new IllegalStateException("Khach thue nay da co hop dong dang ACTIVE.");
+        }
         if (room.getStatus() != RoomStatus.AVAILABLE) {
             throw new IllegalStateException("Phong dang duoc thue.");
         }
@@ -69,6 +119,7 @@ public class ContractService implements IService<Contract> {
     }
 
     public void renewContract(long id, LocalDate newEndDate) {
+        processExpiredContracts();
         Contract contract = findById(id);
         if (contract.getStatus() != ContractStatus.ACTIVE) {
             throw new IllegalStateException("Chi co the gia han hop dong dang ACTIVE.");
@@ -82,6 +133,7 @@ public class ContractService implements IService<Contract> {
     }
 
     public void endContract(long id) {
+        processExpiredContracts();
         Contract contract = findById(id);
         if (contract.getStatus() != ContractStatus.ACTIVE) {
             throw new IllegalStateException("Hop dong nay da ket thuc.");
@@ -108,6 +160,7 @@ public class ContractService implements IService<Contract> {
 
     @Override
     public List<Contract> getAll() {
+        processExpiredContracts();
         return contracts;
     }
 
@@ -123,6 +176,7 @@ public class ContractService implements IService<Contract> {
 
     @Override
     public Contract findById(long id) {
+        processExpiredContracts();
         return contracts.get(findIndexById(id));
     }
 }

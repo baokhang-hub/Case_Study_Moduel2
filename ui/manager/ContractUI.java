@@ -64,7 +64,7 @@ public class ContractUI {
             return;
         }
         if (!showTenants()) {
-            System.out.println("Chua co khach thue. Hay them khach thue truoc.");
+            System.out.println("Khong co khach thue nao chua co hop dong ACTIVE.");
             return;
         }
 
@@ -113,11 +113,15 @@ public class ContractUI {
     }
 
     private static boolean showTenants() {
-        System.out.println("===== KHACH THUE =====");
+        System.out.println("===== KHACH THUE CHUA CO HOP DONG ACTIVE =====");
+        boolean found = false;
         for (Tenant tenant : tenantService.getAll()) {
-            System.out.println("ID: " + tenant.getId() + ", Ho ten: " + tenant.getFullName());
+            if (!contractService.hasActiveContractForTenant(tenant.getId())) {
+                System.out.println("ID: " + tenant.getId() + ", Ho ten: " + tenant.getFullName());
+                found = true;
+            }
         }
-        return !tenantService.getAll().isEmpty();
+        return found;
     }
 
     public static void renewContract() {

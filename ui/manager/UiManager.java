@@ -1,12 +1,14 @@
 package ui.manager;
 
 import libary.InputHelper;
+import service.ContractService;
 
 public class UiManager {
 
     public static  void showManagerMenu() {
         int choice;
         do {
+            ContractService.getObject().processExpiredContracts();
             System.out.println("===== QUAN LY KHU TRO =====");
             System.out.println("1. Quan ly phong");
             System.out.println("2. Quan ly khach thue");
@@ -32,7 +34,7 @@ public class UiManager {
                     ui.manager.InvoiceUI.showInvoiceMenu();
                     break;
                 case 5:
-                    // Call method to view reports
+                    ui.manager.ReportUI.showReportMenu();
                     break;
                 case 0:
                     System.out.println("Dang xuat");

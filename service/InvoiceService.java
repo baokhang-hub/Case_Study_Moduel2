@@ -1,5 +1,6 @@
 package service;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -11,8 +12,8 @@ import entity.Room;
 import libary.erros.DataNotFoundException;
 import repository.InvoiceRepository;
 
-public class InvoiceService implements IService<Invoice> {
-    private static final double ELECTRICITY_FEE_PER_PERSON = 100_000;
+public class InvoiceService {
+    private static final double ELECTRICITY_PRICE_PER_KWH = 2_000;
     private static final double WATER_FEE_PER_PERSON = 100_000;
 
     private final InvoiceRepository invoiceRepository = new InvoiceRepository();
@@ -29,30 +30,35 @@ public class InvoiceService implements IService<Invoice> {
     public InvoiceService() {
     }
 
-    public Invoice createInvoice(long contractId, YearMonth billingMonth) {
-        if (billingMonth == null) {
-            throw new IllegalArgumentException("Thang lap hoa don khong duoc de trong.");
+    public Invoice createInvoice(long contractId, LocalDate invoiceDate, double electricityUsageKwh) {
+        if (invoiceDate == null) {
+            throw new IllegalArgumentException("Ngay lap hoa don khong duoc de trong.");
+        }
+        if (electricityUsageKwh < 0) {
+            throw new IllegalArgumentException("So kWh dien khong duoc am.");
         }
         Contract contract = contractService.findById(contractId);
         if (contract.getStatus() != ContractStatus.ACTIVE) {
             throw new IllegalStateException("Chi lap hoa don cho hop dong dang ACTIVE.");
         }
+        YearMonth billingMonth = YearMonth.from(invoiceDate);
         YearMonth startMonth = YearMonth.from(contract.getStartDate());
         YearMonth endMonth = YearMonth.from(contract.getEndDate());
         if (billingMonth.isBefore(startMonth) || billingMonth.isAfter(endMonth)) {
             throw new IllegalArgumentException("Thang hoa don phai nam trong thoi han hop dong.");
         }
         for (Invoice invoice : invoices) {
-            if (invoice.getContractId() == contractId && invoice.getBillingMonth().equals(billingMonth)) {
+            if (invoice.getContractId() == contractId
+                    && YearMonth.from(invoice.getInvoiceDate()).equals(billingMonth)) {
                 throw new IllegalStateException("Hop dong nay da co hoa don trong thang da chon.");
             }
         }
 
         Room room = roomService.findById(contract.getRoomId());
         int people = contract.getOccupantCount();
-        Invoice invoice = new Invoice(System.currentTimeMillis(), contractId, billingMonth,
-                room.getMonthlyRent(), people,
-                people * ELECTRICITY_FEE_PER_PERSON, people * WATER_FEE_PER_PERSON,
+        Invoice invoice = new Invoice(System.currentTimeMillis(), contractId, invoiceDate,
+                room.getMonthlyRent(), people, electricityUsageKwh,
+                electricityUsageKwh * ELECTRICITY_PRICE_PER_KWH, people * WATER_FEE_PER_PERSON,
                 InvoiceStatus.UNPAID);
         invoices.add(invoice);
         invoiceRepository.write(invoices);
@@ -72,27 +78,10 @@ public class InvoiceService implements IService<Invoice> {
         return invoice.getRoomRent() + invoice.getElectricityFee() + invoice.getWaterFee();
     }
 
-    @Override
-    public void add(Invoice invoice) {
-        throw new UnsupportedOperationException("Hay dung createInvoice de lap hoa don.");
-    }
-
-    @Override
-    public void update(long id, Invoice invoice) {
-        throw new UnsupportedOperationException("Hoa don khong ho tro cap nhat tong quat.");
-    }
-
-    @Override
-    public void delete(long id) {
-        throw new UnsupportedOperationException("Khong ho tro xoa hoa don.");
-    }
-
-    @Override
     public List<Invoice> getAll() {
         return invoices;
     }
 
-    @Override
     public int findIndexById(long id) {
         for (int i = 0; i < invoices.size(); i++) {
             if (invoices.get(i).getId() == id) {
@@ -102,7 +91,6 @@ public class InvoiceService implements IService<Invoice> {
         throw new DataNotFoundException();
     }
 
-    @Override
     public Invoice findById(long id) {
         return invoices.get(findIndexById(id));
     }

@@ -1,6 +1,6 @@
 package ui.manager;
 
-import java.time.YearMonth;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -15,7 +15,7 @@ import service.InvoiceService;
 import service.RoomService;
 
 public class InvoiceUI {
-    private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("MM/yyyy");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final InvoiceService invoiceService = InvoiceService.getObject();
     private static final ContractService contractService = ContractService.getObject();
     private static final RoomService roomService = RoomService.getObject();
@@ -49,15 +49,17 @@ public class InvoiceUI {
         }
         System.out.print("Nhap ID hop dong: ");
         long contractId = InputHelper.inputLong();
-        System.out.print("Nhap thang hoa don (MM/yyyy): ");
-        String monthInput = InputHelper.inputString();
+        System.out.print("Nhap ngay lap hoa don (dd/MM/yyyy): ");
+        String dateInput = InputHelper.inputString();
+        System.out.print("Nhap so kWh dien da su dung: ");
+        double electricityUsageKwh = InputHelper.inputDouble();
         try {
-            YearMonth month = YearMonth.parse(monthInput, MONTH_FORMATTER);
-            Invoice invoice = invoiceService.createInvoice(contractId, month);
-            System.out.println("Da lap hoa don thanh cong. ID: " + invoice.getId());
+            LocalDate invoiceDate = LocalDate.parse(dateInput, DATE_FORMATTER);
+            Invoice invoice = invoiceService.createInvoice(contractId, invoiceDate, electricityUsageKwh);
+            System.out.println("Da lap hoa don thanh cong. ID: ");
             printInvoice(invoice);
         } catch (DateTimeParseException e) {
-            System.out.println("Thang khong hop le. Hay nhap theo dang MM/yyyy.");
+            System.out.println("Ngay khong hop le. Hay nhap theo dang dd/MM/yyyy.");
         } catch (DataNotFoundException | IllegalArgumentException | IllegalStateException e) {
             System.out.println(e instanceof DataNotFoundException
                     ? "Khong tim thay hop dong hoac phong theo ID da nhap." : e.getMessage());
@@ -113,9 +115,10 @@ public class InvoiceUI {
     private static void printInvoice(Invoice invoice) {
         System.out.println("ID: " + invoice.getId()
                 + ", Hop dong: " + invoice.getContractId()
-                + ", Thang: " + invoice.getBillingMonth().format(MONTH_FORMATTER)
+                + ", Ngay lap: " + invoice.getInvoiceDate().format(DATE_FORMATTER)
                 + ", Tien phong: " + invoice.getRoomRent()
                 + ", So nguoi: " + invoice.getOccupantCount()
+                + ", Dien tieu thu: " + invoice.getElectricityUsageKwh() + " kWh"
                 + ", Tien dien: " + invoice.getElectricityFee()
                 + ", Tien nuoc: " + invoice.getWaterFee()
                 + ", Tong tien: " + invoiceService.calculateTotal(invoice)
