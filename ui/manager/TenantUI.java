@@ -39,7 +39,6 @@ public class TenantUI {
                     getAllTenants();
                     break;
                 case 0:
-                    ui.manager.UiManager.showManagerMenu();
                     break;
                 default:
                     System.out.println("Lua chon khong hop le. Vui long chon lai.");
@@ -58,8 +57,13 @@ public class TenantUI {
         System.out.print("Nhap so CCCD/giay to: ");
         String identityNumber = InputHelper.inputString();
 
-        tenantService.add(new Tenant(id, fullName, phoneNumber, identityNumber));
-        System.out.println("Da them khach thue thanh cong. ID: " + id);
+        try {
+            Tenant tenant = new Tenant(id, fullName, phoneNumber, identityNumber);
+            tenantService.add(tenant);
+            System.out.println("Da them khach thue thanh cong. ID: " + id);
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     public static void updateTenant() {
@@ -81,6 +85,8 @@ public class TenantUI {
             System.out.println("Da cap nhat khach thue thanh cong!");
         } catch (DataNotFoundException e) {
             System.out.println("Khong tim thay khach thue co ID: " + id);
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -98,6 +104,8 @@ public class TenantUI {
             }
         } catch (DataNotFoundException e) {
             System.out.println("Khong tim thay khach thue co ID: " + id);
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
         }
     }
 

@@ -8,17 +8,20 @@ import entity.Contract;
 import entity.ContractStatus;
 import entity.Invoice;
 import entity.Room;
+import entity.Tenant;
 import libary.InputHelper;
 import libary.erros.DataNotFoundException;
 import service.ContractService;
 import service.InvoiceService;
 import service.RoomService;
+import service.TenantService;
 
 public class InvoiceUI {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final InvoiceService invoiceService = InvoiceService.getObject();
     private static final ContractService contractService = ContractService.getObject();
     private static final RoomService roomService = RoomService.getObject();
+    private static final TenantService tenantService = TenantService.getObject();
 
     public static void showInvoiceMenu() {
         int choice;
@@ -56,7 +59,7 @@ public class InvoiceUI {
         try {
             LocalDate invoiceDate = LocalDate.parse(dateInput, DATE_FORMATTER);
             Invoice invoice = invoiceService.createInvoice(contractId, invoiceDate, electricityUsageKwh);
-            System.out.println("Da lap hoa don thanh cong. ID: ");
+            System.out.println("Da lap hoa don thanh cong:");
             printInvoice(invoice);
         } catch (DateTimeParseException e) {
             System.out.println("Ngay khong hop le. Hay nhap theo dang dd/MM/yyyy.");
@@ -72,8 +75,9 @@ public class InvoiceUI {
         for (Contract contract : contractService.getAll()) {
             if (contract.getStatus() == ContractStatus.ACTIVE) {
                 Room room = roomService.findById(contract.getRoomId());
+                Tenant tenant = tenantService.findById(contract.getTenantId());
                 System.out.println("ID hop dong: " + contract.getId() + ", Phong: " + room.getName()
-                        + ", ID khach thue: " + contract.getTenantId());
+                        + ", Khach thue: " + tenant.getFullName());
                 found = true;
             }
         }
@@ -113,8 +117,12 @@ public class InvoiceUI {
     }
 
     private static void printInvoice(Invoice invoice) {
+        Contract contract = contractService.findById(invoice.getContractId());
+        Room room = roomService.findById(contract.getRoomId());
+        Tenant tenant = tenantService.findById(contract.getTenantId());
         System.out.println("ID: " + invoice.getId()
-                + ", Hop dong: " + invoice.getContractId()
+                + ", Phong: " + room.getName()
+                + ", Khach thue: " + tenant.getFullName()
                 + ", Ngay lap: " + invoice.getInvoiceDate().format(DATE_FORMATTER)
                 + ", Tien phong: " + invoice.getRoomRent()
                 + ", So nguoi: " + invoice.getOccupantCount()

@@ -38,8 +38,7 @@ public class ReportUI {
             System.out.println("1. Hop dong sap het han");
             System.out.println("2. Tinh hinh hoa don");
             System.out.println("3. Tinh hinh su co phong");
-            System.out.println("4. Ghi nhan su co phong");
-            System.out.println("5. Cap nhat trang thai su co");
+            System.out.println("4. Cap nhat trang thai su co");
             System.out.println("0. Tro ve menu quan ly");
             System.out.print("Chon chuc nang: ");
             choice = InputHelper.inputInt();
@@ -47,8 +46,7 @@ public class ReportUI {
                 case 1: showExpiringContracts(); break;
                 case 2: showInvoiceSituation(); break;
                 case 3: showRoomIssues(); break;
-                case 4: reportRoomIssue(); break;
-                case 5: updateRoomIssueStatus(); break;
+                case 4: updateRoomIssueStatus(); break;
                 case 0: break;
                 default: System.out.println("Lua chon khong hop le.");
             }
@@ -93,8 +91,12 @@ public class ReportUI {
         for (Invoice invoice : invoices) {
             if (invoice.getStatus() == InvoiceStatus.UNPAID) {
                 hasUnpaid = true;
+                Contract contract = contractService.findById(invoice.getContractId());
+                Room room = roomService.findById(contract.getRoomId());
+                Tenant tenant = tenantService.findById(contract.getTenantId());
                 System.out.println("ID: " + invoice.getId()
-                        + ", Hop dong: " + invoice.getContractId()
+                        + ", Phong: " + room.getName()
+                        + ", Khach thue: " + tenant.getFullName()
                         + ", Ngay lap: " + invoice.getInvoiceDate().format(DATE_FORMATTER)
                         + ", So tien: " + invoiceService.calculateTotal(invoice) + " VND");
             }
@@ -116,31 +118,17 @@ public class ReportUI {
         }
     }
 
-    private static void reportRoomIssue() {
-        System.out.println("===== PHONG =====");
-        for (Room room : roomService.getAll()) {
-            System.out.println("ID: " + room.getId() + ", Ten phong: " + room.getName());
-        }
-        System.out.println("===== KHACH THUE =====");
-        for (Tenant tenant : tenantService.getAll()) {
-            System.out.println("ID: " + tenant.getId() + ", Ho ten: " + tenant.getFullName());
-        }
-        System.out.print("Nhap ID phong: ");
-        long roomId = InputHelper.inputLong();
-        System.out.print("Nhap ID khach thue dang bao su co: ");
-        long tenantId = InputHelper.inputLong();
-        System.out.print("Mo ta su co: ");
-        String description = InputHelper.inputString();
-        try {
-            RoomIssue issue = roomIssueService.reportIssue(roomId, tenantId, description);
-            System.out.println("Da ghi nhan su co. ID: " + issue.getId());
-        } catch (IllegalArgumentException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
     private static void updateRoomIssueStatus() {
-        showRoomIssues();
+        List<RoomIssue> issues = reportService.getUnresolvedRoomIssues();
+        System.out.println("===== SU CO PHONG CHUA XU LY =====");
+        if (issues.isEmpty()) {
+            System.out.println("Khong co su co nao dang cho xu ly.");
+            return;
+        }
+        for (RoomIssue issue : issues) {
+            printRoomIssue(issue);
+        }
+
         System.out.print("Nhap ID su co can cap nhat: ");
         long id = InputHelper.inputLong();
         System.out.println("1. OPEN");

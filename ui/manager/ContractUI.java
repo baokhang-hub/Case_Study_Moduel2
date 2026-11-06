@@ -78,18 +78,18 @@ public class ContractUI {
         String startDateInput = InputHelper.inputString();
         System.out.print("Nhap ngay ket thuc (dd/MM/yyyy): ");
         String endDateInput = InputHelper.inputString();
-        System.out.print("Nhap tien coc: ");
-        double deposit = InputHelper.inputDouble();
-
         try {
             LocalDate startDate = LocalDate.parse(startDateInput, DATE_FORMATTER);
             LocalDate endDate = LocalDate.parse(endDateInput, DATE_FORMATTER);
+            Room room = roomService.findById(roomId);
+            double deposit = room.getMonthlyRent() * 2;
             long id = System.currentTimeMillis();
             Contract contract = new Contract(id, roomId, tenantId, occupantCount,
                     startDate, endDate, deposit, ContractStatus.ACTIVE);
 
             contractService.add(contract);
             System.out.println("Da tao hop dong thanh cong. ID hop dong: " + id);
+            System.out.println("Tien coc (2 thang tien thue, chua tinh dien nuoc): " + deposit + " VND");
         } catch (DateTimeParseException e) {
             System.out.println("Ngay khong hop le. Hay nhap theo dang dd/MM/yyyy.");
         } catch (DataNotFoundException e) {
@@ -181,9 +181,11 @@ public class ContractUI {
     }
 
     private static void printContract(Contract contract) {
+        Room room = roomService.findById(contract.getRoomId());
+        Tenant tenant = tenantService.findById(contract.getTenantId());
         System.out.println("ID: " + contract.getId()
-                + ", ID phong: " + contract.getRoomId()
-                + ", ID khach thue: " + contract.getTenantId()
+                + ", Phong: " + room.getName()
+                + ", Khach thue: " + tenant.getFullName()
                 + ", So nguoi o: " + contract.getOccupantCount()
                 + ", Tu: " + contract.getStartDate().format(DATE_FORMATTER)
                 + ", Den: " + contract.getEndDate().format(DATE_FORMATTER)

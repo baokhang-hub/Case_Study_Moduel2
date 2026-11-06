@@ -6,13 +6,16 @@ public class User {
     private String passwordHash;
     private UserRole role;
     private long tenantId;
+    private boolean mustChangePassword;
 
-    public User(long id, String username, String passwordHash, UserRole role, long tenantId) {
+    public User(long id, String username, String passwordHash, UserRole role, long tenantId,
+                boolean mustChangePassword) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
         this.role = role;
         this.tenantId = tenantId;
+        this.mustChangePassword = mustChangePassword;
     }
 
     public long getId() {
@@ -53,5 +56,13 @@ public class User {
 
     public void setTenantId(long tenantId) {
         this.tenantId = tenantId;
+    }
+
+    public boolean mustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
     }
 }
